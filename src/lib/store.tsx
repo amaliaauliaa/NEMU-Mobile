@@ -57,7 +57,8 @@ const seed: Item[] = [
 
 type Ctx = {
   items: Item[];
-  addItem: (i: Omit<Item, "id" | "tanggal">) => void;
+  // MODUL 2: sekarang mengembalikan id supaya bisa dipakai router.replace()
+  addItem: (i: Omit<Item, "id" | "tanggal">) => string;
   updateStatus: (id: string, s: Status) => void;
 };
 const StoreCtx = createContext<Ctx>(null!);
@@ -65,17 +66,19 @@ export const useStore = () => useContext(StoreCtx);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<Item[]>(seed);
-  const addItem: Ctx["addItem"] = (i) =>
+
+  const addItem: Ctx["addItem"] = (i) => {
+    const id = Date.now().toString();
     setItems((p) => [
-      {
-        ...i,
-        id: Date.now().toString(),
-        tanggal: new Date().toISOString().slice(0, 10),
-      },
+      { ...i, id, tanggal: new Date().toISOString().slice(0, 10) },
       ...p,
     ]);
+    return id;
+  };
+
   const updateStatus: Ctx["updateStatus"] = (id, s) =>
     setItems((p) => p.map((x) => (x.id === id ? { ...x, status: s } : x)));
+
   return (
     <StoreCtx.Provider value={{ items, addItem, updateStatus }}>
       {children}

@@ -25,6 +25,9 @@ Items left behind on campus, such as wallets, phones, keys, student ID cards, ba
 | **Item Details**         | Display complete information including the item name, status, category, location, date, description, and reporter.                              |
 | **Contact Owner/Finder** | A button that opens WhatsApp to contact the reporter with a pre-filled message.                                                                 |
 | **Item Status**          | Three statuses: **Lost**, **Found**, and **Returned**. The status can be updated from the item details page.                                    |
+| **Campus Weather**       | Fetch current weather around UMM from the Open-Meteo API and display loading, error, and retry states.                                         |
+
+The campus weather card uses the Open-Meteo Forecast API and requires an internet connection.
 
 ### Planned Pages
 

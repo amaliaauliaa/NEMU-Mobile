@@ -1,4 +1,4 @@
-import { useNavigation, useRouter } from "expo-router";
+import { DarkTheme, useNavigation, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   FlatList,
@@ -8,6 +8,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import CampusWeatherCard from "../components/CampusWeatherCard";
 import Chip from "../components/Chip";
 import { KATEGORI, LOKASI, useStore, WARNA } from "../lib/store";
 import { homeStyles } from "../styles/home";
@@ -77,6 +78,8 @@ export default function Home() {
         <Text style={homeStyles.summary}>
           {ringkas.hilang} hilang • {ringkas.ditemukan} ditemukan
         </Text>
+
+        <CampusWeatherCard />
 
         <ScrollView
           horizontal

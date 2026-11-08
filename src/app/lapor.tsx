@@ -33,19 +33,27 @@ export default function Lapor() {
   const [pelapor, setPelapor] = useState("");
   const [kontak, setKontak] = useState("");
 
-  // useRef: pindah fokus antar input tanpa re-render
+  // STATE SUB-FORM
+  const [subItems, setSubItems] = useState<string[]>([]);
+  const [inputSub, setInputSub] = useState("");
+
+  const tambahSubItem = () => {
+    if (inputSub.trim()) {
+      setSubItems([...subItems, inputSub]);
+      setInputSub("");
+    }
+  };
+
   const namaRef = useRef<TextInput>(null);
   const deskripsiRef = useRef<TextInput>(null);
   const pelaporRef = useRef<TextInput>(null);
   const kontakRef = useRef<TextInput>(null);
 
-  // useEffect (deps []): jalan sekali saat halaman pertama tampil -> autofocus
   useEffect(() => {
     namaRef.current?.focus();
   }, []);
 
   const batal = () => {
-    // canGoBack(): aman kalau halaman dibuka lewat deep link
     if (router.canGoBack()) router.back();
     else router.replace("/");
   };
@@ -62,16 +70,21 @@ export default function Lapor() {
       );
       return;
     }
+
+    const deskripsiLengkap =
+      subItems.length > 0
+        ? `${deskripsi}\n\nDetail Bawaan:\n- ${subItems.join("\n- ")}`
+        : deskripsi;
+
     const id = addItem({
       nama,
-      deskripsi,
+      deskripsi: deskripsiLengkap,
       kategori,
       lokasi,
       status,
       kontak,
       pelapor,
     });
-    // replace(): form dibuang dari stack, tombol back di detail kembali ke Home
     router.replace(`/detail/${id}`);
   };
 
@@ -94,6 +107,7 @@ export default function Lapor() {
           onPress={() => setStatus("Ditemukan")}
         />
       </View>
+
       <Text style={label}>Nama Barang</Text>
       <TextInput
         ref={namaRef}
@@ -104,6 +118,7 @@ export default function Lapor() {
         returnKeyType="next"
         onSubmitEditing={() => deskripsiRef.current?.focus()}
       />
+
       <Text style={label}>Deskripsi</Text>
       <TextInput
         ref={deskripsiRef}
@@ -113,7 +128,40 @@ export default function Lapor() {
         onChangeText={setDeskripsi}
         placeholder="Ciri-ciri barang"
       />
-      <Text style={label}>Kategori</Text>
+
+      <Text style={label}>Isi Detail Barang Bawaan (Sub-Form)</Text>
+      <View style={{ flexDirection: "row", marginBottom: 12 }}>
+        <TextInput
+          style={[input, { flex: 1, marginRight: 8, marginBottom: 0 }]}
+          placeholder="Contoh: Kartu ATM, SIM"
+          value={inputSub}
+          onChangeText={setInputSub}
+        />
+
+        <Pressable
+          onPress={tambahSubItem}
+          style={{
+            backgroundColor: "#1E3A8A",
+            paddingHorizontal: 16,
+            justifyContent: "center",
+            borderRadius: 10,
+            height: 48,
+          }}
+        >
+          <Text style={{ color: "#fff", fontWeight: "700" }}>+ Tambah</Text>
+        </Pressable>
+      </View>
+
+      {subItems.map((item, index) => (
+        <Text
+          key={index}
+          style={{ color: "#374151", marginLeft: 8, marginBottom: 4 }}
+        >
+          • {item}
+        </Text>
+      ))}
+
+      <Text style={[label, { marginTop: 12 }]}>Kategori</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
         {KATEGORI.map((k) => (
           <Chip
@@ -124,6 +172,7 @@ export default function Lapor() {
           />
         ))}
       </View>
+
       <Text style={label}>Lokasi</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
         {LOKASI.map((l) => (
@@ -135,6 +184,7 @@ export default function Lapor() {
           />
         ))}
       </View>
+
       <Text style={label}>Nama Kamu</Text>
       <TextInput
         ref={pelaporRef}
@@ -144,6 +194,7 @@ export default function Lapor() {
         returnKeyType="next"
         onSubmitEditing={() => kontakRef.current?.focus()}
       />
+
       <Text style={label}>No. WhatsApp</Text>
       <TextInput
         ref={kontakRef}
@@ -153,6 +204,7 @@ export default function Lapor() {
         keyboardType="phone-pad"
         placeholder="08xxxxxxxxxx"
       />
+
       <Pressable
         onPress={simpan}
         style={{
@@ -164,6 +216,7 @@ export default function Lapor() {
       >
         <Text style={{ color: "#fff", fontWeight: "700" }}>Kirim Laporan</Text>
       </Pressable>
+
       <Pressable
         onPress={batal}
         style={{ padding: 14, alignItems: "center", marginTop: 6 }}

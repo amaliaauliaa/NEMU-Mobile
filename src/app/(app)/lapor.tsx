@@ -1,15 +1,17 @@
+// CODELAB 5 - INSERT laporan ke Supabase (user_id otomatis dari user yang login)
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  Alert,
+  ActivityIndicator,
   Pressable,
   ScrollView,
   Text,
   TextInput,
   View,
 } from "react-native";
-import Chip from "../components/Chip";
-import { KATEGORI, LOKASI, Status, useStore } from "../lib/store";
+import Chip from "../../components/Chip";
+import { useAuth } from "../../lib/auth";
+import { KATEGORI, LOKASI, Status, useStore } from "../../lib/store";
 
 const input = {
   backgroundColor: "#fff",
@@ -23,6 +25,7 @@ const label = { fontWeight: "600", marginBottom: 6 } as const;
 
 export default function Lapor() {
   const { addItem } = useStore();
+  const { user } = useAuth();
   const router = useRouter();
 
   const [status, setStatus] = useState<Status>("Hilang");
@@ -30,16 +33,21 @@ export default function Lapor() {
   const [deskripsi, setDeskripsi] = useState("");
   const [kategori, setKategori] = useState(KATEGORI[0]);
   const [lokasi, setLokasi] = useState(LOKASI[0]);
-  const [pelapor, setPelapor] = useState("");
+  // Nama pelapor diisi otomatis dari metadata akun (masih bisa diubah)
+  const [pelapor, setPelapor] = useState(
+    (user?.user_metadata?.nama as string | undefined) ?? "",
+  );
   const [kontak, setKontak] = useState("");
 
-  // STATE SUB-FORM
   const [subItems, setSubItems] = useState<string[]>([]);
   const [inputSub, setInputSub] = useState("");
 
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
   const tambahSubItem = () => {
     if (inputSub.trim()) {
-      setSubItems([...subItems, inputSub]);
+      setSubItems([...subItems, inputSub.trim()]);
       setInputSub("");
     }
   };
@@ -58,34 +66,41 @@ export default function Lapor() {
     else router.replace("/");
   };
 
-  const simpan = () => {
+  const simpan = async () => {
+    if (saving) return; // cegah double submit
+
     if (
       !nama.trim() ||
       !pelapor.trim() ||
       kontak.replace(/\D/g, "").length < 9
     ) {
-      Alert.alert(
-        "Data belum lengkap",
-        "Isi nama barang, nama kamu, dan nomor WhatsApp yang valid.",
-      );
+      setErrorMsg("Isi nama barang, nama kamu, dan nomor WhatsApp yang valid.");
       return;
     }
 
     const deskripsiLengkap =
       subItems.length > 0
-        ? `${deskripsi}\n\nDetail Bawaan:\n- ${subItems.join("\n- ")}`
-        : deskripsi;
+        ? `${deskripsi.trim()}\n\nDetail Bawaan:\n- ${subItems.join("\n- ")}`
+        : deskripsi.trim();
 
-    const id = addItem({
-      nama,
-      deskripsi: deskripsiLengkap,
-      kategori,
-      lokasi,
-      status,
-      kontak,
-      pelapor,
-    });
-    router.replace(`/detail/${id}`);
+    setSaving(true);
+    setErrorMsg(null);
+    try {
+      const id = await addItem({
+        nama: nama.trim(),
+        deskripsi: deskripsiLengkap,
+        kategori,
+        lokasi,
+        status,
+        kontak: kontak.trim(),
+        pelapor: pelapor.trim(),
+      });
+      router.replace(`/detail/${id}`);
+    } catch (e) {
+      setErrorMsg(e instanceof Error ? e.message : "Gagal mengirim laporan.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -137,7 +152,6 @@ export default function Lapor() {
           value={inputSub}
           onChangeText={setInputSub}
         />
-
         <Pressable
           onPress={tambahSubItem}
           style={{
@@ -164,24 +178,14 @@ export default function Lapor() {
       <Text style={[label, { marginTop: 12 }]}>Kategori</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
         {KATEGORI.map((k) => (
-          <Chip
-            key={k}
-            label={k}
-            active={kategori === k}
-            onPress={() => setKategori(k)}
-          />
+          <Chip key={k} label={k} active={kategori === k} onPress={() => setKategori(k)} />
         ))}
       </View>
 
       <Text style={label}>Lokasi</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
         {LOKASI.map((l) => (
-          <Chip
-            key={l}
-            label={l}
-            active={lokasi === l}
-            onPress={() => setLokasi(l)}
-          />
+          <Chip key={l} label={l} active={lokasi === l} onPress={() => setLokasi(l)} />
         ))}
       </View>
 
@@ -205,20 +209,31 @@ export default function Lapor() {
         placeholder="08xxxxxxxxxx"
       />
 
+      {errorMsg && (
+        <Text style={{ color: "#B91C1C", marginBottom: 12 }}>{errorMsg}</Text>
+      )}
+
       <Pressable
         onPress={simpan}
+        disabled={saving}
         style={{
           backgroundColor: "#1E3A8A",
           padding: 14,
           borderRadius: 10,
           alignItems: "center",
+          opacity: saving ? 0.7 : 1,
         }}
       >
-        <Text style={{ color: "#fff", fontWeight: "700" }}>Kirim Laporan</Text>
+        {saving ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={{ color: "#fff", fontWeight: "700" }}>Kirim Laporan</Text>
+        )}
       </Pressable>
 
       <Pressable
         onPress={batal}
+        disabled={saving}
         style={{ padding: 14, alignItems: "center", marginTop: 6 }}
       >
         <Text style={{ color: "#6B7280", fontWeight: "600" }}>Batal</Text>
